@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  
+</head>
+<body bgcolor="#001C23">
+  <style>
+	/* игровые поля */
+    #sea_left_div, #sea_right_div {
+		margin-left: 64px;
+		margin-top: 64px;
+		width: 320px; 
+		height: 320px; 
+		float: center; 
+		border: 5px dashed #001C23;
+		background: linear-gradient(
+			60deg,
+			rgba(0,5,0,.2), 
+			rgba(10,100,0,4)
+		);
+		background-size: 2px 2px, 100%;
+		cursor: crosshair;
+	}
+	
+	/* Рамка радара */
+	.radarBorder { 
+		width: 457px; 
+		height: 457px; 
+		float: center;
+		display: inline-block;
+		border-radius: 50%;
+		vertical-align: middle;
+		border: 5px solid rgba(0,204,0, 10);
+	}	
+	
+	/* Рабочая область радара */
+	.radarDisplay { 
+		overflow: hidden;
+		background: rgb(20,20,20);
+		background: linear-gradient(
+			60deg,
+			rgba(0,50,0,10), 
+			rgba(0,5,0,10)
+		);
+		background-size: 2px 2px, 100%;		
+	}
+	
+	/* Корабли игрока */
+	#sea_left_div .ship {
+		background: linear-gradient(
+			60deg,
+			rgba(0,200,0,.2), 
+			rgba(0,200,0,4)
+		);
+		background-size: 2px 2px, 100%;
+	}
+	
+	/* Стиль по умолчанию для правого поля */
+    #sea_right_div .ship, .water { 
+		background: linear-gradient(
+			60deg,
+			rgba(0,0,254,.0), 
+			rgba(100,100,254,0)
+		),
+		linear-gradient(
+			rgba(0,17,255,.0), 
+			rgba(90,110,255,0)
+		);
+		background-size: 1em 1em, 100%;
+		background-color: 0008FF;
+	}
+	
+	/* пораженный корабль */
+    .dead { 
+		background: linear-gradient(
+			60deg,
+			rgba(254,0,0,.2), 
+			rgba(254,0,0,4)
+		);
+		background-size: 2px 2px, 100%;		
+		border: -2pxж
+	}
+	/* промах */
+    .missed { 
+		background: linear-gradient(
+			60deg,
+			rgba(0,1,0,.2), 
+			rgba(0,1,0,4)
+		);
+		background-size: 2px 2px, 100%;		
+		background-color: 0008FF;
+		}
+    #sea_left_div div, #sea_right_div div { width: 30px; height: 30px; float: left; border: 1px solid green;}
+	
+	/* сканирующий луч радара */
+	.rays {
+	position: absolute;
+    margin: 0 0 0 0;
+	background: url("ray.png");
+		-webkit-animation:spin 10s linear infinite;
+		-moz-animation:spin 10s linear infinite;
+		animation:spin 10s linear infinite;
+	}
+	@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+	@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+	@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }	
+	.title {
+		font-family: monospace;
+		text-shadow: 0 0 0.2em #FFFFFF, 0 0 0.2em #FFFFFF, 0 0 0.2em #FFFFFF;
+		padding-left:100px;
+	}
+	h1 {
+		font-family: monospace;
+		text-shadow: 0 0 0.2em #87F, 0 0 0.2em #87F, 0 0 0.2em #87F;
+		text-transform: uppercase;
+		
+		}
+	textarea {
+		overflow: hidden; 
+		color: green; 
+		background-color: #001C23; 
+		border:1px solid #001C23;
+		}
+  </style>
+	
+	<!-- Эти стрелки будут крутиться -->
+	<img class="rays" src="ray.png" style="top: 11px; left: 12px">
+	<img id="img2" class="rays" src="ray.png" style="top: 11px; left: 483px">
+
+	<!-- помещаем игровые поля на экраны радаров -->
+	<div class="radarBorder radarDisplay">		
+		<div id="sea_left_div"></div>	
+	</div>
+	<div class="radarBorder radarDisplay">		
+		<div id="sea_right_div"></div>
+	</div>
+	<br><br><br><br>
+	<font id="welcome" color='green' face='monospace'>Введите логин:</font>
+	<input id="playerName" type="text" size="40">
+	<button id="start"><font color='green' face='monospace'>Получить боевое задание</font></button><br>
+	<textarea id="output" disabled  cols=115 rows=10"></textarea>
+	
+	<script>  
+	window.onload = function() {
+        seaLeftDiv = document.getElementById('sea_left_div'),
+        seaRightDiv = document.getElementById('sea_right_div'),
+        outputDiv = document.getElementById("output"),		
+        button = document.getElementById('start');
+    
+		button.onclick = function () {
+			button.innerHTML = "<font color='green' face='monospace'>Новая игра</font>";
+			// генерация карт
+			sea1 = fillShips();
+			sea2 = fillShips();
+			
+			// скрываем приветствие и тд
+			document.getElementById('welcome').style.visibility = 'hidden';
+			document.getElementById('playerName').style.visibility = 'hidden';
+			// крутилку у правого экрана тоже убираем, чтобы не мешала прицеливаться
+			img2 = document.getElementById('img2');
+			img2.style.display = 'none';
+			var playerName = document.getElementById('playerName').value != "" ? document.getElementById('playerName').value : "Безымянный герой";
+			outputDiv.value = playerName + ", Вам предстоит принять участие в жестокой битве!";
+			outputDiv.value = outputDiv.value + "\r\n" + "Вражеские корабли на подходе!";
+			outputDiv.value = outputDiv.value + "\r\n" + "На левом радаре видны все ваши союзники.";
+			outputDiv.value = outputDiv.value + "\r\n" + "Ваша задача: просканировать водное пространство, определить координаты кораблей противника и нанести удар по вражескому флоту.";
+			outputDiv.value = outputDiv.value + "\r\n" + "Ваш ход, " + playerName + "!";
+			// очищаем предыдущую прорисовку карт
+			while (seaLeftDiv.firstChild) {
+				seaLeftDiv.removeChild(seaLeftDiv.firstChild);
+			}
+			while (seaRightDiv.firstChild) {
+				seaRightDiv.removeChild(seaRightDiv.firstChild);
+			}
+			// хоть и генерили карту 12*12, нам нужны только ряды с 1 по 10
+			for (i = 1; i <= 10; i++) for (j = 1; j <= 10; j++) {
+				// в зависимости от карты присваиваем игровым ячейкам соответствующие стили и помещаем в игровое поле
+				tmpDiv = document.createElement('div');
+				tmpDiv.id = i+'_'+j;
+				if (sea1[i][j] == 0) {
+					tmpDiv.className = 'ship';
+				} else {
+					tmpDiv.className = 'water';
+				}
+				seaLeftDiv.appendChild(tmpDiv);
+				tmpDiv2 = document.createElement('div');
+				tmpDiv2.className = sea2[i][j] == 0 ? 'ship' : 'water';
+				tmpDiv2.onclick = function () {
+					// исключаем повторное нажатие
+					if (this.className != 'missed' && this.className != 'dead'){
+						var missed = fire(this);
+						if (missed) {
+							outputDiv.value = outputDiv.value + "\r\n" + playerName + ", Вы промахнулись =(";
+							backfire();
+						} else if (document.querySelectorAll('#sea_right_div .ship').length != 0) {
+							outputDiv.value = outputDiv.value + "\r\n" + playerName + ", Вы поразили цель! Ваш ход!";
+						}
+						outputDiv.scrollTop = outputDiv.scrollHeight;					
+					};
+				};
+				seaRightDiv.appendChild(tmpDiv2);
+		  }
+		};
+		function fire(el) {
+			if (el.className == 'dead' || el.className == 'missed') return false;
+			el.className = el.className == 'ship' ? 'dead' : 'missed'; // если находился корабль то помечаем убитым
+			if (document.querySelectorAll('#sea_right_div .ship').length === 0) {
+				outputDiv.value = outputDiv.value + "\r\nВы выиграли эту смертельную битву! Хотите сыграть еще?";
+				var img2 = document.getElementById('img2');
+				img2.style.display = '';
+				return false;
+			}
+        return (el.className == 'missed');
+		}
+		
+		function backfire() {
+		// ответный удар противника, пока не промахнется
+		// задержка выполнения, для отображение хода противника
+				i = 100;
+					setTimeout(function(){
+					while (i > 0){
+						i--;
+						var targets = document.querySelectorAll('#sea_left_div .ship, #sea_left_div .water');						
+						var missed = fire(targets[Math.floor(Math.random() * targets.length)]);
+						
+						if (targets.length === 0 || missed) {
+							outputDiv.value = outputDiv.value + "\r\nВражеский крейсер промахнулся! Ваш ход!";						
+							break;
+						} else {
+							outputDiv.value = outputDiv.value + "\r\nВражеский снаряд повредил ваше судно.";
+						}
+						outputDiv.scrollTop = outputDiv.scrollHeight;					
+					}
+					if (document.querySelectorAll('#sea_left_div .ship').length === 0) {
+						outputDiv.value = outputDiv.value + "\r\nУвы, но противник оказался сильнее Вас... На Вашем месте я бы сыграл еще партию и отомстил бы ему...";
+						var img2 = document.getElementById('img2');
+						img2.style.display = '';
+				}
+				outputDiv.scrollTop = outputDiv.scrollHeight;
+			}, 100);
+		}	  
+		
+		function fillShips () {
+			var sea = [];
+			// 12*12 чтобы расставить правильно
+			for (var i = 0; i < 12; i++){
+				sea[i] = [];
+				for (var j = 0; j < 12; j++){
+					sea[i][j] = -1;
+				}
+			}
+			for (var size = 4; size > 0; size --) {
+				for (var count = 1; count <= 5-size; count ++) {
+					var shipSeted;
+					var vertical;
+					var x;
+					var y;
+					do {
+						vertical = 0;
+						shipSeted = 1;
+						x = Math.floor(Math.random()*10 + 1);
+						y = Math.floor(Math.random()*10 + 1);
+						// проверка возможности установить горизонтально
+						for (var dx=x-1; dx<=x+1; dx ++){
+							for (var dy=y-1; dy<=y+size; dy ++){
+								if ((sea[dx] == null) || (sea[dx][dy] != -1)) {
+									shipSeted *= 0;
+									break;
+								}
+							}
+							if (shipSeted == 0) break;
+						}
+						if (shipSeted == 0) // если не получилось установить горизонтально, то пробуем вертикально
+						{
+							vertical = 1;
+							shipSeted = 1;
+							for (var dy=y-1; dy<=y+1; dy ++){
+								for (var dx=x-1; dx<=x+size; dx ++){
+									if ((sea[dx] == null) || (sea[dx][dy] != -1)) {
+										shipSeted *= 0;
+										break;
+									}
+								}
+								if (shipSeted == 0) break;
+							}
+						}
+					}
+					while (shipSeted == 0)
+					if (vertical == 0){
+						for (var dy = y; dy<y+size; dy++) {
+							sea[x][dy] = 0; // установим корабль горизонтально
+						}
+					} else {
+						for (var dx = x; dx<x+size; dx++) {
+							sea[dx][y] = 0; // установим корабль вертикально
+						}
+					}
+				}				
+			}
+			return sea;
+		}
+    }();
+
+	</script>
+</body>
+</html>
